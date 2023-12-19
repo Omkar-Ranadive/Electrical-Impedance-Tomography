@@ -1,34 +1,29 @@
 import numpy as np 
 from scipy import linalg
 import numpy as np 
-from sklearn.decomposition import PCA
-import pandas as pd 
-import seaborn as sns 
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
-from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
-from constants import DATA_PATH
+from collections import defaultdict
 
 
-# Plotting constants 
-sns.set_theme(style='whitegrid')
-
-
-def cal_vol(arr): 
+def cal_vol(arr, dth_root=True): 
     """
     Get the volume based on the SVD decomposition of input array 
     Args:
         arr (np.ndarray): Input array containing the data 
+        dth_root (bool): If true, dth root(volume) is returned where d = number of dimensions used to cal vol 
 
     Returns:
         volume (float): Product of singular values, i.e, the volumne 
     """
 
     # Get singular value decomposition (SVD) of the arr 
-    U, s, Vh = linalg.svd(arr)
+    s = linalg.svd(arr, compute_uv=False)
+
     # Product of singular values is the volume 
     volume = np.prod(s) 
+
+    if dth_root: 
+        volume = np.power(volume, 1/len(s))
 
     return volume
 
@@ -111,7 +106,38 @@ def radial_coord_per_cluster(arr, labels):
     return r_dict
 
 
+def max_radial_coordinate_per_cluster(r_dict):
+    """
+    Get the maximum radial coordinate from each cluster and return them as selected indices 
+    Args:
+        r_dict (dict): Dictionary containing radial coordinates for each point in each cluster. {clust_label: radial..}
+
+    Returns:
+        max_per_cluster (list): Value of max radial coordinate from each cluster 
+        selected_indices (list): Index of max radial coordinate from each cluster 
+    """
+    # Get max radial coordinate from each cluster
+    selected_indices = []
+    max_per_cluster = []
+    for label, rvalues in r_dict.items():
+        r_coors, indices = rvalues[0], rvalues[1] 
+        max_per_cluster.append(np.max(r_coors))
+        max_index = np.argmax(r_coors)
+        selected_indices.append(indices[max_index])
+    
+    return max_per_cluster, selected_indices
+
+
 def get_norm_with_rank(arr): 
+    """
+    Given an array, return magnitudes and indices sorted based on those magnitudes (in descending order)
+    Args:
+        arr (np.ndarray): Input data array 
+
+    Returns:
+        magnitudes (np.ndarray): Norm of the array 
+        sorted_indices (np.ndarray): Sorted indices in descending order based on the norm  
+    """
     # Get the norm 
     magnitudes = np.linalg.norm(arr, axis=1) 
     # Sort the magnitudes in descending order 
@@ -121,9 +147,36 @@ def get_norm_with_rank(arr):
 
 
 def get_indices_rank(sorted_indices, subset_indices): 
+    """
+    Given an arr of sorted indices (by magnitude/norm) and a subset array of selected indices, return the corresponding
+    rank for the indices in the subset array based on the sorted array. 
+    Args:
+        sorted_indices (np.ndarray): Complete array of indices, sorted based on their magnitudes 
+        subset_indices (np.ndarray): Final indices selected by some algorithm  
+
+    Returns:
+        ranks (dict): Dictionary of the type {index: rank....}
+    """
     subset_ranks = [np.where(sorted_indices == index)[0][0] for index in subset_indices]
     ranks = dict(sorted(zip(subset_indices, subset_ranks), key=lambda x: x[1]))    
     return ranks 
+
+
+def get_cluster_for_index(labels, subset_indices): 
+    """
+    Given cluster labels and selected indices, generate index dict of type {index: clust_label...} and label count dict 
+    of type {label: total_count....} 
+    Args:
+        labels (np.ndarray): Cluster labels
+        subset_indices (np.ndarray): Selected indices 
+    """
+    index_dict = dict(sorted(zip(subset_indices, labels[subset_indices]), key=lambda x: x[1]))    
+
+    label_counts = defaultdict(int)
+    for value in index_dict.values():
+        label_counts[value] += 1
+
+    return index_dict, label_counts
 
 
 def flip_signs(arr): 
@@ -189,79 +242,11 @@ def modified_cosine_dist_2pair(arr):
     return selected_dist_indices, selected_norm_indices
  
 
-def plot_pca(X, labels, metric, num_components, selected_indices=None, filename=None): 
-
-
-    # PCA Visualization 
-    # Perform the fit on the entire data for accurate results (not on the subset)
-
-    pca = PCA(n_components=num_components).fit(X)
-    X_transformed = pca.transform(X) 
-    print("PCA Shape", X_transformed.shape)
-
-    num_labels = np.unique(labels).shape[0]
-    main_colors = sns.color_palette('husl', num_labels)
-
-    if num_components == 2: 
-        fig1, ax1 = plt.subplots()
-        df_transformed = pd.DataFrame(X_transformed, columns=['Component1', 'Component2'])
-        df_transformed['label'] = labels 
-        sns.scatterplot(data=df_transformed, x='Component1', y='Component2', hue='label', palette=main_colors, ax=ax1)
-
-        if selected_indices: 
-            df_transformed['selected'] = np.where(np.isin(np.arange(len(df_transformed)), selected_indices),
-                                                  'Selected', 'Not Selected')
-            
-            sns.scatterplot(data=df_transformed[df_transformed['selected'] == 'Selected'], 
-                            x='Component1', y='Component2', color='red', ax=ax1, marker='x', s=80, linewidth=2)
-
-        ax1.set_title(f"{metric}")
-
-        if num_labels > 5: 
-            ax1.get_legend().remove()
-
-    elif num_components == 3: 
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-
-        # Create a color map
-        cmap = ListedColormap(main_colors)
-
-        # Map each label value to a color
-        colors_array = cmap(labels)
-        ax.scatter(X_transformed[:, 0], X_transformed[:, 1], X_transformed[:, 2], c=colors_array)       
-        ax.set_xlabel('Component1')
-        ax.set_ylabel('Component2')
-        ax.set_zlabel('Component3')
-
-        # Create a legend with labels and corresponding colors
-        legend_labels = {label: color for label, color in zip(labels, colors_array)}
-        legend_elements = [plt.Line2D([0], [0], marker='o', color='w', label=label, 
-                                    markerfacecolor=color, markersize=10) for label, color in legend_labels.items()]
-        ax.legend(handles=legend_elements, title="Legend", loc='upper right')
-
-    if filename is not None: 
-        fig1.savefig(DATA_PATH / filename)
-        plt.close(fig1)
-
-
 def scale_data(arr, technique):
     if technique == 'simple': 
         scaled_arr = arr*10 
     
     return scaled_arr
-
-
-def plot_tsne(X, labels): 
-    fig1, ax1 = plt.subplots()
-    tsne = TSNE(n_components=2)
-    X_tsne = tsne.fit_transform(X)
-    print("KL Divergence Val: ", tsne.kl_divergence_)
-    df_tsne = pd.DataFrame(X_tsne, columns=['Component1', 'Component2'])
-    df_tsne['label'] = labels 
-    sns.scatterplot(data=df_tsne, x='Component1', y='Component2', hue='label', palette=colors, ax=ax1)
-    ax1.set_title(" T-SNE Visualization") 
-
 
 
 

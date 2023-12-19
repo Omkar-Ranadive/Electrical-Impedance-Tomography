@@ -1,11 +1,17 @@
 import numpy as np 
-from utils import cal_vol
+from utils_math import cal_vol, get_norm_with_rank
+from itertools import combinations
+import algos 
+# from numba import jit 
 
 
 class Genetic(): 
-    def __init__(self, arr, num_generations, population_size, num_parents, mutation_rate, print_every=None) -> None:
+    def __init__(self, arr, num_generations, population_size, 
+                num_parents, mutation_rate, num_entries, 
+                random_children_rate, direct_mutants_rate, adaptive_mutation, 
+                adaptive_increase=1.2, adaptive_decrease=0.8, improvement_check=50,
+                print_every=None) -> None:
         """
-
         Args:
             arr (np.ndarray): Input array containing the data 
             num_generations (int): Amount of iterations to run the generation algorithm 
@@ -14,6 +20,16 @@ class Genetic():
                                    one "population", i.e, randomly chosen row from original matrix (size 378)
             num_parents (int): Number of parents to keep in next generation after fitness test 
             mutation_rate (float): Children wil randomly be mutated with mutation_rate  
+            improvement_check (int): If fitness doesn't increase every improvement_check generation, 
+                                     increase mutation rate
+            random_children_rate (float): At each generation, this percent of population will be randomly generated.
+            direct_mutants_rate (float): At each generation, the best parent will be mutated rate*population_size.  
+            num_entries (int): Number of features/measurements, i.e, the total number of indices which get selected 
+
+            adaptive_mutation (bool): If true, mutation rate adapts to fitness over generations
+            adaptive_increase (float): Rate by which to increase mutation rate (only used if adaptive_mutation=True)
+            adaptive_decrease (float): Rate by which to decrease mutation rate (only used if adaptive_mutation=True)
+
             print_every (int, optional): If provide, print the best results every print_every iterations. 
                                          Defaults to None.
         """
@@ -22,11 +38,15 @@ class Genetic():
         self.population_size = population_size
         self.num_parents = num_parents
         assert self.population_size >= self.num_parents, "Num parents can't be greater than total population"
-        self.num_children = self.population_size - self.num_parents
+        self.random_children = int(random_children_rate * population_size)  
+        self.num_direct_mutants = int(direct_mutants_rate * population_size)
+        self.num_children = self.population_size - self.num_parents - self.random_children - self.num_direct_mutants
         self.mutation_rate = mutation_rate
-        self.num_rows, self.num_cols = self.arr.shape[0], self.arr.shape[1] 
+        self.original_rate = mutation_rate
+        self.num_rows, self.num_cols = self.arr.shape[0], num_entries
+        self.adaptive_mutation = adaptive_mutation
         self.print_every = print_every
-    
+        self.improvement_check = improvement_check 
         self.population = np.empty((population_size, self.num_cols), dtype=int)
 
         for i in range(self.population_size): 
@@ -43,7 +63,7 @@ class Genetic():
         return np.array([cal_vol(self.arr[indices]) for indices in self.population])
     
 
-    def _select_parents(self, fitness_values):
+    def _select_parents(self, fitness_values: np.ndarray) -> np.ndarray:
         """
         Select the most fit self.num_parents number of parents 
         Args:
@@ -68,6 +88,8 @@ class Genetic():
         """
 
         children = []
+
+        # Randomly form children from all parents 
         for _ in range(self.num_children):
             p1_index, p2_index = np.random.choice(len(parents), 2, replace=False)
             parent1, parent2 = parents[p1_index], parents[p2_index]
@@ -101,7 +123,29 @@ class Genetic():
                 child[mutation_col] = int(np.random.choice(available_indices))
             
         return children 
-    
+
+
+    def _get_random_children(self): 
+        children = np.empty((self.random_children, self.num_cols), dtype=int)
+
+        for i in range(self.random_children): 
+            children[i] = np.random.choice(self.num_rows, self.num_cols, replace=False)
+        
+        return children 
+
+
+    def _get_direct_mutants(self, candidate): 
+        mutants = np.empty((self.num_direct_mutants, self.num_cols), dtype=int)
+
+        for i in range(self.num_direct_mutants): 
+            mutants[i] = candidate.copy()
+            mutation_col = np.random.randint(self.num_cols) 
+            available_indices = np.setdiff1d(np.arange(self.num_rows), candidate)
+            mutants[i][mutation_col] = int(np.random.choice(available_indices))
+        
+        return mutants
+
+
     def run_genetic_simulation(self):
         """
         Run genetic algorithm for num_generations and return the best results obtained 
@@ -117,9 +161,10 @@ class Genetic():
                 print(f"Running for generation: {generation}")
                 print(f"Best Volume till now: {best_dict['best_score']}")
                 print(f"Selected Indices: {best_dict['best_indices']}")
+                print(f"Mutation Rate: {self.mutation_rate}")
                 print("*"*100)
-                            
-            fitness_scores = self._fitness() 
+
+            fitness_scores = self._fitness()
             selected_parents = self._select_parents(fitness_scores)
 
             max_fitness = cal_vol(self.arr[selected_parents[-1]])
@@ -128,17 +173,92 @@ class Genetic():
                 best_dict['best_indices'] = selected_parents[-1].copy()
                 best_dict['best_generation'] = generation
 
+                if self.adaptive_mutation: 
+                    # If improvement is observed, reduce mutation rate
+                    self.mutation_rate = max(self.original_rate, self.mutation_rate*0.8) 
+
             children = self._crossover(selected_parents)
             children = self._mutate(children) 
-            new_population = np.concatenate((selected_parents, children)) 
+            random_children = self._get_random_children()
+            direct_mutants = self._get_direct_mutants(selected_parents[-1])
+            new_population = np.concatenate((selected_parents, children, random_children, direct_mutants)) 
             self.population = new_population 
 
+            if self.adaptive_mutation and generation % self.improvement_check == 0: 
+                # If no improvement over k generations, increase mutation rate
+                if generation - best_dict['best_generation'] > self.improvement_check: 
+                    self.mutation_rate = min(self.mutation_rate*1.2, 1.0) 
+
+
+        best_dict['best_indices'] = sorted(best_dict['best_indices'])
         return best_dict 
 
 
+class EnsembleGenetic(Genetic):
+    def __init__(self, gen_instances, gen_dict_instances, gen_dict_ensemble, logger=None) -> None:
+        self.gen_instances = gen_instances 
+        self.gen_dict_instances = gen_dict_instances
+        self.candidates = []
+        self.scores = []
+        self.logger = logger
+        super().__init__(**gen_dict_ensemble)
 
 
+    def _print(self, output):
+        if self.logger is not None: 
+            print(output) 
+            self.logger.info(output)
+        else: 
+            print(output)
+        
+
+    def run_ensemble_genetics(self): 
+        early_dict = {'best_score': -np.inf, 'best_indices': None, 'best_generation': -1}
+        early_solution = False 
+        unique_candidates = set()
 
 
+        # Run n runs of genetic algorithm over a small set of iterations to get "good" candidates 
+        for i in range(self.gen_instances):
+            # Terminate early if sol space is too small  
+            if i == 5 and len(unique_candidates) == 1:
+                early_solution = True 
+                break 
+
+            self._print(f"Running genetic instance: {i}")
+            GenObj = Genetic(**self.gen_dict_instances) 
+            best_results = GenObj.run_genetic_simulation()
+            self.candidates.append(best_results['best_indices'])
+            self.scores.append(best_results['best_score'])
+            unique_candidates.add(tuple(best_results['best_indices']))
+
+            self._print(f"Volume: {best_results['best_score']}")
+            self._print(f"Selected Indices: {best_results['best_indices']}")
+            self._print("*"*20)
 
 
+        # Run an instance of greedy approach 
+        greedy_vol, greedy_indices = algos.greedy_approach(self.arr, self.num_cols)
+        self.candidates.append(greedy_indices) 
+        self.scores.append(greedy_vol)
+
+        # Run an instance of highest magnitude approach 
+        magnitudes, sorted_indices = get_norm_with_rank(self.arr) 
+        self.candidates.append(sorted_indices[:self.num_cols])
+        self.scores.append(cal_vol(self.arr[self.candidates[-1]]))
+
+        self.candidates = np.array(self.candidates)
+        self._print("Best candidate obtained in first phase: ")
+        best_first_phase = np.argmax(self.scores)
+        self._print(f'Volume: {self.scores[best_first_phase]}')
+        self._print(f'Indices: {self.candidates[best_first_phase]}')
+        early_dict['best_score'] = self.scores[best_first_phase]
+        early_dict['best_indices'] = self.candidates[best_first_phase]
+
+        if not early_solution:
+            # Add these candidates to the initial population 
+            self.population = np.concatenate((self.population, self.candidates)) 
+            # Run the genetic algorithn again with "good" candidates mixed with the population 
+            return self.run_genetic_simulation()
+        else: 
+            return early_dict

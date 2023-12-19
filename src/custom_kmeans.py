@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.cluster import KMeans
 
 
 class CosineKMeans():
@@ -116,3 +117,20 @@ class CosineKMeans():
             predictions[i] = centroid_index
 
         return predictions
+    
+
+class OrthogonalKMeans(KMeans):
+    def __init__(self, n_clusters, regularization_strength=0.1, **kwargs):
+        super().__init__(n_clusters, n_init='auto', **kwargs)
+        self.regularization_strength = regularization_strength
+
+    def fit(self, X, y=None, sample_weight=None):
+        super().fit(X, y, sample_weight)
+
+        # Calculate the penalty term based on dot products
+        pairwise_dot_products = np.dot(self.cluster_centers_, self.cluster_centers_.T)
+        np.fill_diagonal(pairwise_dot_products, 0)  # Exclude self-dot products
+        regularization_term = self.regularization_strength * np.sum(np.square(pairwise_dot_products))
+
+        # Add regularization term to the objective function
+        self.inertia_ += regularization_term

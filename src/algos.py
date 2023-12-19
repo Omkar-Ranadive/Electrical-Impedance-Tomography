@@ -1,10 +1,11 @@
 import numpy as np 
-import utils 
+import utils_math 
 from constants import DATA_PATH 
 import scipy.io as sio
 from itertools import combinations
 from sklearn.cluster import DBSCAN
-import cosine_kmeans
+import custom_kmeans
+from scipy import linalg 
 
 
 def greedy_approach(arr, num_entries):
@@ -30,14 +31,14 @@ def greedy_approach(arr, num_entries):
         volumes = []
         for index in remaining_indices: 
             arr_subset = arr[selected_indices + [index], :]
-            volumes.append(utils.cal_vol(arr_subset))
+            volumes.append(utils_math.cal_vol(arr_subset))
         
         max_vol_index = np.argmax(volumes) 
         selected_indices.append(remaining_indices[max_vol_index])
 
 
     arr_subset = arr[selected_indices, :]
-    final_volume = utils.cal_vol(arr_subset) 
+    final_volume = utils_math.cal_vol(arr_subset) 
 
     return final_volume, sorted(selected_indices) 
 
@@ -62,26 +63,21 @@ def max_radial_coors_approach(arr, clust_param_dict):
 
     max_per_cluster = [] 
     # Convert cartesian to n-sphere coordinates 
-    r, thetas = utils.cartesian_to_nsphere(arr) 
+    r, thetas = utils_math.cartesian_to_nsphere(arr) 
     # print("Shape of angular coordinates", thetas.shape)
 
     # Cluster the angular coordinates (thetas) 
-    labels, clust_dist = utils.get_kmeans_clusters(thetas, clust_param_dict)
+    labels, clust_dist = utils_math.get_kmeans_clusters(thetas, clust_param_dict)
     # print("Cluster distribution: ", clust_dist)
 
     # Get radial coordinates for each point in each cluster 
-    r_dict = utils.radial_coord_per_cluster(arr, labels) 
+    r_dict = utils_math.radial_coord_per_cluster(arr, labels) 
     
     # Get max radial coordinate from each cluster
-    selected_indices = []
-    for label, rvalues in r_dict.items():
-        r_coors, indices = rvalues[0], rvalues[1] 
-        max_per_cluster.append(np.max(r_coors))
-        max_index = np.argmax(r_coors)
-        selected_indices.append(indices[max_index])
+    max_per_cluster, selected_indices = utils_math.max_radial_coordinate_per_cluster(r_dict)
 
     # Calculate volume based on these radial coordinates 
-    final_volume = utils.cal_vol(arr[selected_indices, :]) 
+    final_volume = utils_math.cal_vol(arr[selected_indices, :]) 
 
     return final_volume, sorted(selected_indices), labels
 
@@ -90,40 +86,60 @@ def random_approach(arr, num_entries, num_iterations=1000):
 
     volumes = []
     total_values = len(arr) 
-
+    
     for _ in range(num_iterations): 
         random_indices = np.random.choice(total_values, num_entries, replace=False)
         arr_subset = arr[random_indices, :]
-        volumes.append(utils.cal_vol(arr_subset))
+        volumes.append(utils_math.cal_vol(arr_subset))
 
     avg_vol = np.mean(volumes) 
+    best_vol = np.max(volumes)
 
-    return avg_vol
+    return avg_vol, best_vol
 
 
-def cosine_clustering(arr): 
-    ck_obj = cosine_kmeans.CosineKMeans(n_clusters=26, max_iterations=50000)
+def cosine_clustering(arr, num_entries): 
+    ck_obj = custom_kmeans.CosineKMeans(n_clusters=num_entries, max_iterations=50000)
     ck_obj.fit(arr) 
     labels = ck_obj.predict(arr) 
     unique, counts = np.unique(labels, return_counts=True)
     clust_dist = dict(zip(unique, counts))
     print(clust_dist)
     # Get radial coordinates for each point in each cluster 
-    r_dict = utils.radial_coord_per_cluster(arr, labels) 
-    max_per_cluster = [] 
-
+    r_dict = utils_math.radial_coord_per_cluster(arr, labels)
+     
     # Get max radial coordinate from each cluster
-    selected_indices = []
-    for label, rvalues in r_dict.items():
-        r_coors, indices = rvalues[0], rvalues[1] 
-        max_per_cluster.append(np.max(r_coors))
-        max_index = np.argmax(r_coors)
-        selected_indices.append(indices[max_index])
+    max_per_cluster, selected_indices = utils_math.max_radial_coordinate_per_cluster(r_dict)
 
     # Calculate volume based on these radial coordinates 
-    final_volume = utils.cal_vol(arr[selected_indices, :]) 
+    final_volume = utils_math.cal_vol(arr[selected_indices, :]) 
 
     return final_volume, sorted(selected_indices), labels
 
+
+def left_singular_matrix_approach(arr, num_entries): 
+    U, s, Vh = linalg.svd(arr)
+    avg_singular_values = np.mean(U, axis=1)
+    selected_indices = np.argsort(avg_singular_values)[-num_entries:]
+    final_volume = utils_math.cal_vol(arr[selected_indices, :])
+
+    return final_volume, sorted(selected_indices)
+
+
+def ortho_kmeans(arr, num_entries):
+    kmeans_ortho = custom_kmeans.OrthogonalKMeans(n_clusters=num_entries, regularization_strength=0.5)
+    kmeans_ortho.fit(arr)
+    labels = kmeans_ortho.labels_
+    unique, counts = np.unique(labels, return_counts=True)
+    clust_dist = dict(zip(unique, counts))
+
+    # Get radial coordinates for each point in each cluster 
+    r_dict = utils_math.radial_coord_per_cluster(arr, labels) 
+    max_per_cluster, selected_indices = utils_math.max_radial_coordinate_per_cluster(r_dict)
+    
+    # Calculate volume based on these radial coordinates 
+    final_volume = utils_math.cal_vol(arr[selected_indices, :]) 
+    
+    return final_volume, sorted(selected_indices)
 
 
