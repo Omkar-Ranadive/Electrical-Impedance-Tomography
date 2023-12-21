@@ -64,7 +64,6 @@ if __name__ == '__main__':
     parser.add_argument("--gi_dmr", default=0.05, type=float, help="Direct mutation rate for each generation")
 
     # Gen Ensemble dict (second phase) 
-    parser.add_argument("--ge_it", default=20, type=int, help="Amount of instance of genetic algorithm")
     parser.add_argument("--ge_gen", default=100, type=int, help="Number of generations")
     parser.add_argument("--ge_pop", default=2000, type=int, help="Population size")
     parser.add_argument("--ge_par", default=300, type=int, help="Number of parents")
