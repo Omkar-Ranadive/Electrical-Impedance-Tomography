@@ -29,7 +29,7 @@ data_list = [
 (22, 65, 65),
 (27, 120, 104),
 (7, 6, 2),
-(9, 5, 5),
+(9, 15, 5),
 (12, 14, 9),
 (14, 14, 14),
 (16, 28, 20),
@@ -39,12 +39,12 @@ data_list = [
 (34, 120, 104),
 (8, 6, 2),
 (12, 5, 5),
-(15, 14, 9),
+(15, 15, 9),
 (19, 14, 14),
 (22, 28, 20),
 (25, 27, 27),
 (32, 44, 44),
-(38, 65, 65),
+(39, 65, 65),
 (48, 120, 104)
 ]
 
@@ -53,7 +53,27 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--start", default=0, type=int, help="Starting index of data list")
     parser.add_argument("--end", default=len(data_list), type=int, help="Ending index of data list")
-    parser.add_argument("--genit", default=20, type=int, help="Amount of instance of genetic algorithm")
+    parser.add_argument("--gen_it", default=20, type=int, help="Amount of instance of genetic algorithm")
+
+    # Gen dict instances (first phase)
+    parser.add_argument("--gi_gen", default=100, type=int, help="Number of generations")
+    parser.add_argument("--gi_pop", default=2500, type=int, help="Population size")
+    parser.add_argument("--gi_par", default=200, type=int, help="Number of parents")
+    parser.add_argument("--gi_mr", default=0.2, type=float, help="Mutation rate")
+    parser.add_argument("--gi_cr", default=0.2, type=float, help="Random children rate for each generation")
+    parser.add_argument("--gi_dmr", default=0.05, type=float, help="Direct mutation rate for each generation")
+
+    # Gen Ensemble dict (second phase) 
+    parser.add_argument("--ge_it", default=20, type=int, help="Amount of instance of genetic algorithm")
+    parser.add_argument("--ge_gen", default=100, type=int, help="Number of generations")
+    parser.add_argument("--ge_pop", default=2000, type=int, help="Population size")
+    parser.add_argument("--ge_par", default=300, type=int, help="Number of parents")
+    parser.add_argument("--ge_mr", default=0.4, type=float, help="Mutation rate")
+    parser.add_argument("--ge_cr", default=0.3, type=float, help="Random children rate for each generation")
+    parser.add_argument("--ge_dmr", default=0.1, type=float, help="Direct mutation rate for each generation")
+
+
+    # 
     args = parser.parse_args()
 
     # Load the data 
@@ -75,13 +95,16 @@ if __name__ == '__main__':
         # Scale/normalize the data 
         arr = utils_math.scale_data(arr, technique='simple')
         num_entries = D
-        gen_dict_instances = {'arr': arr, 'num_generations': 100, 'population_size': 2500, 'num_parents': 200, 
-                    'mutation_rate': 0.2, 'num_entries': num_entries, 'adaptive_mutation': False, 
-                    'random_children_rate': 0.2, 'direct_mutants_rate': 0.05}
-        gen_dict_ensemble = {'arr': arr, 'num_generations': 100, 'population_size': 2000, 'num_parents': 300, 
-                    'mutation_rate': 0.4, 'num_entries': num_entries, 'adaptive_mutation': False, 
-                    'random_children_rate': 0.3, 'direct_mutants_rate': 0.1}
-        EnGenObj = EnsembleGenetic(gen_instances=args.genit, gen_dict_instances=gen_dict_instances, 
+        gen_dict_instances = {'arr': arr, 'num_generations': args.gi_gen, 'population_size': args.gi_pop, 
+                              'num_parents': args.gi_par, 'mutation_rate': args.gi_mr, 'num_entries': num_entries, 
+                              'adaptive_mutation': False, 'random_children_rate': args.gi_cr, 
+                              'direct_mutants_rate': args.gi_dmr}
+        
+        gen_dict_ensemble = {'arr': arr, 'num_generations': args.ge_gen, 'population_size': args.ge_pop, 
+                             'num_parents': args.ge_par, 'mutation_rate': args.ge_mr, 'num_entries': num_entries, 
+                             'adaptive_mutation': False, 'random_children_rate': args.ge_cr, 
+                             'direct_mutants_rate': args.ge_dmr}
+        EnGenObj = EnsembleGenetic(gen_instances=args.gen_it, gen_dict_instances=gen_dict_instances, 
                                 gen_dict_ensemble=gen_dict_ensemble, logger=logger)
         
         logger.info(f"Matrix shape: {arr.shape}")

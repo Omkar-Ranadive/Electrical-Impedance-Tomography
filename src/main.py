@@ -62,11 +62,11 @@ if __name__ == '__main__':
 
     # Cluster the data in cartesian coordinates 
     param_dict = {'n_clusters': num_entries, 'n_init': 'auto', 'random_state': seed}
-    clust_labels_cartesian, _ = utils_math.get_kmeans_clusters(arr, param_dict) 
+    clust_labels_cartesian, _, _ = utils_math.get_kmeans_clusters(arr, param_dict) 
 
     # Cluster the data in spherical coordiantes 
     param_dict = {'n_clusters': num_entries, 'n_init': 'auto', 'random_state': seed}
-    max_rad_vol, max_rad_indices, clust_labels_angular = algos.max_radial_coors_approach(arr, param_dict) 
+    max_rad_vol, max_rad_indices, clust_labels_angular, _, _ = algos.max_radial_coors_approach(arr, param_dict) 
 
 
     magnitudes, sorted_indices = utils_math.get_norm_with_rank(arr) 
@@ -92,14 +92,15 @@ if __name__ == '__main__':
 
     logger.info("Max radial coordinate approach with flipped signs: ")
     arr_flipped = utils_math.flip_signs(arr)
-    max_rad_vol_flip, max_rad_indices_flip, clust_labels_flip = algos.max_radial_coors_approach(arr_flipped, param_dict) 
+    max_rad_vol_flip, max_rad_indices_flip, clust_labels_flip, _, _ = algos.max_radial_coors_approach(arr_flipped, 
+                                                                                                   param_dict) 
     max_rad_flip_ranks = utils_math.get_indices_rank(sorted_indices, max_rad_indices_flip)
     print_results(max_rad_vol_flip, max_rad_indices_flip, max_rad_flip_ranks, algo_info="max_radial_flipped")
 
     logger.info("Max radial coordinates with each axis as init centroid")
     initial_centers = np.eye(N=num_entries, M=arr.shape[1]-1)
     param_dict = {'n_clusters': num_entries, 'n_init': 'auto', 'random_state': seed, 'init': initial_centers}
-    max_rad_vol_axis, max_rad_indices_axis, clust_labels_axis = algos.max_radial_coors_approach(arr, param_dict) 
+    max_rad_vol_axis, max_rad_indices_axis, clust_labels_axis, _, _ = algos.max_radial_coors_approach(arr, param_dict) 
     max_rad_axis_ranks = utils_math.get_indices_rank(sorted_indices, max_rad_indices_axis)
     print_results(max_rad_vol_axis, max_rad_indices_axis, max_rad_axis_ranks, algo_info="max_radial_axis_centroid")
 

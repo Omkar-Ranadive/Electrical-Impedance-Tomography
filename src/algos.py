@@ -58,7 +58,8 @@ def max_radial_coors_approach(arr, clust_param_dict):
     Returns:
         final_volume (float): Max volume obtained 
         selected_indice (list): Indices selected to calculate the volume     
-    
+        labels (np.ndarray): Cluster labels 
+        cluster_center (np.ndarray): Cluster centers
     """
 
     max_per_cluster = [] 
@@ -67,7 +68,7 @@ def max_radial_coors_approach(arr, clust_param_dict):
     # print("Shape of angular coordinates", thetas.shape)
 
     # Cluster the angular coordinates (thetas) 
-    labels, clust_dist = utils_math.get_kmeans_clusters(thetas, clust_param_dict)
+    labels, clust_centers, clust_dist = utils_math.get_kmeans_clusters(thetas, clust_param_dict)
     # print("Cluster distribution: ", clust_dist)
 
     # Get radial coordinates for each point in each cluster 
@@ -79,7 +80,7 @@ def max_radial_coors_approach(arr, clust_param_dict):
     # Calculate volume based on these radial coordinates 
     final_volume = utils_math.cal_vol(arr[selected_indices, :]) 
 
-    return final_volume, sorted(selected_indices), labels
+    return final_volume, sorted(selected_indices), labels, clust_centers, thetas
 
 
 def random_approach(arr, num_entries, num_iterations=1000): 

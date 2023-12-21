@@ -75,6 +75,7 @@ def get_kmeans_clusters(arr, clust_param_dict):
 
     Returns:
         labels (np.ndarray): Cluster labels for each point 
+        cluster_centers (np.ndarray): Cluster centers 
         clust_dist (dict): Distribution of points across clusters 
     """
 
@@ -85,7 +86,7 @@ def get_kmeans_clusters(arr, clust_param_dict):
     unique, counts = np.unique(labels, return_counts=True)
     clust_dist = dict(zip(unique, counts))
 
-    return labels, clust_dist
+    return labels, cluster_centers, clust_dist
 
 
 def radial_coord_per_cluster(arr, labels): 
@@ -193,6 +194,49 @@ def flip_signs(arr):
     negative_mask = arr[:, 0] < 0
     arr[negative_mask, :] *= -1 
     return arr 
+
+
+def calculate_angle(points1, points2):
+    """
+    Calculate the angle in degrees between two numpy arrays 
+    Args:
+        points1 (np.ndarray): First set of points. 
+        points2 (np.ndarray): Second set of points 
+
+    Returns:
+        angles (np.ndarray): Angle in degrees 
+    """
+    dot_products = np.dot(points1, points2)
+    norm_products = np.linalg.norm(points1, axis=1) * np.linalg.norm(points2)
+    cos_thetas = np.abs(dot_products / norm_products)
+    angles = np.degrees(np.arccos(np.clip(cos_thetas, -1.0, 1.0)))
+    return angles
+
+
+def get_angles_per_cluster(arr, labels, cluster_centers):
+    """
+    Given the original data array, cluster labels and cluster centers, get the angles of each point w.r.t its center 
+    of the form {clust_label: [angle1, angle2...]}
+    Args:
+        arr (np.ndarray): Input data array 
+        labels (np.ndarray): Cluster labels 
+        cluster_centers (np.ndarray): Cluster centers 
+
+    Returns:
+        angles_per_label (dict): Dictionary of the form {clust_label: [angle1, angle2...]} containing the angles 
+                                 between each point and its cluster center. 
+    """
+    
+    unique_labels = np.unique(labels)
+    angles_per_label = {}
+
+    for label in unique_labels:
+        indices = np.where(labels == label)[0]
+        cluster_rows = arr[indices]
+        cluster_angles = calculate_angle(cluster_rows, cluster_centers[label])
+        angles_per_label[label] = cluster_angles
+
+    return angles_per_label
 
 
 def modified_cosine_dist(a, b): 
