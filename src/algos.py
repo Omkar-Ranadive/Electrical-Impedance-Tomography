@@ -80,7 +80,7 @@ def max_radial_coors_approach(arr, clust_param_dict):
     # Calculate volume based on these radial coordinates 
     final_volume = utils_math.cal_vol(arr[selected_indices, :]) 
 
-    return final_volume, sorted(selected_indices), labels, clust_centers, thetas
+    return final_volume, sorted(selected_indices), labels, clust_centers, thetas, clust_dist
 
 
 def random_approach(arr, num_entries, num_iterations=1000): 

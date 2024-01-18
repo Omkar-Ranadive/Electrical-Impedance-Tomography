@@ -122,21 +122,18 @@ def plot_clust_index_dist(cart_counts, ang_counts, filename, algo_info):
 
 
 def compare_volumes(volumes1, volumes2, filename, algo_info): 
-    fig, axs = plt.subplots(1, 1) 
+    fig, axes = plt.subplots(1, 1) 
 
-    # # Set y-axis ticks with a difference of 0.1 for both subplots
-    # min_value = min(min(volumes1), min(volumes2))
-    # max_value = max(max(volumes1), max(volumes2))
-    # axs.yaxis.set_ticks(np.arange(min_value, max_value + 0.2, 0.2))
-
-    axs.scatter(range(0, len(volumes1)), volumes1, c='b', marker='x', label='Volume 1')
-    axs.scatter(range(0, len(volumes2)), volumes2, c='r', marker='o', label='Volume 2')
-    axs.set_title(f'{algo_info}')
-    axs.legend()
+    axes.scatter(range(0, len(volumes1)), volumes1, c='b', marker='x', label='Volume 1')
+    axes.scatter(range(0, len(volumes2)), volumes2, c='r', marker='o', label='Volume 2')
+    axes.set_xlabel('Matrices')
+    axes.set_ylabel('Sensitivity Volume (V^(1/D))')
+    axes.set_title(f'{algo_info}')
+    axes.legend()
     fig.savefig(filename, dpi=300)
 
 
-def plot_angle_distribution(angles_per_cluster, indices_dict, filename, bins=90):
+def plot_angle_distribution(angles_per_cluster, indices_dict, title, filename, bins=90):
     """
     Plot the histogram of angles per cluster 
     Args:
@@ -153,13 +150,60 @@ def plot_angle_distribution(angles_per_cluster, indices_dict, filename, bins=90)
         axes[i].set_title(f'Distribution of Angles for Label {label}')
         axes[i].set_xlabel('Angle (degrees)')
         axes[i].set_ylabel('Frequency')
+        axes[i].set_xlim(0, 90)  # Set x-axis limits from 0 to 90
 
     # Plot the selected indices separately on the histogram 
     for index, angles in indices_dict.items(): 
         for angle in angles:
-            axes[index].axvline(x=angle, color='red', linewidth=3, linestyle='dotted')
+            axes[index].axvline(x=angle, color='red', linewidth=3, linestyle='dotted', label='Selected Indices')
+
+    fig.suptitle(f"{title}", fontsize='small')
+    fig.tight_layout()
+    fig.savefig(filename, dpi=300)
+
+
+def plot_magnitude_ranks(magnitudes, sorted_mag_indices, selected_indices_ranks, filename): 
+    fig, axes = plt.subplots(1, 1) 
+
+    axes.scatter(range(0, len(sorted_mag_indices)), magnitudes[sorted_mag_indices], alpha=0.7)
+
+    axes.scatter(selected_indices_ranks.values(), magnitudes[list(selected_indices_ranks.keys())], 
+                    c='r', marker='x', s=50, label='Selected Indices', alpha=0.9)
+    
+    axes.set_xlabel('Ranks of indices')
+    axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+    axes.set_ylabel('Magnitude')
+    axes.legend()
+    
+    fig.tight_layout()
+    fig.savefig(filename, dpi=300)
+
+
+def plot_centroid_angle_heatmap(angles, title, filename):
+    fig, axes = plt.subplots(1, 1) 
+    num_clusters = len(angles) 
+    annot = True if num_clusters <= 10 else False 
+
+    sns.heatmap(angles, vmin=0, vmax=180, cmap='viridis', annot=annot, fmt=".2f", 
+                cbar_kws={'label': 'Angle (degrees)'}, ax=axes)
+
+    axes.set_xlabel('Cluster Index')
+    axes.set_ylabel('Cluster Index')
+    axes.set_title(f'Angle Between {title} Cluster Centers', fontsize='medium')
 
     fig.tight_layout()
     fig.savefig(filename, dpi=300)
 
 
+def plot_cluster_distribution(clust_dict, title, filename):
+    fig, ax = plt.subplots(1, 1) 
+    clusters, num_entries = clust_dict.keys(), clust_dict.values()
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.bar(clusters, num_entries)
+    ax.set_xlabel('Cluster Labels')
+    ax.set_ylabel('Total Entries')
+    ax.set_title(f'{title} cluster distribution')
+
+    fig.tight_layout()
+    fig.savefig(filename, dpi=300)

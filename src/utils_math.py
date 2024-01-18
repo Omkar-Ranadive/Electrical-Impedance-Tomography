@@ -196,20 +196,22 @@ def flip_signs(arr):
     return arr 
 
 
-def calculate_angle(points1, points2):
+def calculate_abs_angle(points1, points2):
     """
-    Calculate the angle in degrees between two numpy arrays 
+    Calculate the absolute angle in degrees (i.e. 0 to 90) between two numpy arrays 
     Args:
         points1 (np.ndarray): First set of points. 
         points2 (np.ndarray): Second set of points 
 
     Returns:
-        angles (np.ndarray): Angle in degrees 
+        angles (np.ndarray): Angle in degrees
     """
-    dot_products = np.dot(points1, points2)
-    norm_products = np.linalg.norm(points1, axis=1) * np.linalg.norm(points2)
+    dot_products = points1 @ points2.T
+    norm_products = np.linalg.norm(points1, axis=1, keepdims=True) @ np.linalg.norm(points2, axis=1, keepdims=True)
+    
     cos_thetas = np.abs(dot_products / norm_products)
     angles = np.degrees(np.arccos(np.clip(cos_thetas, -1.0, 1.0)))
+
     return angles
 
 
@@ -233,10 +235,31 @@ def get_angles_per_cluster(arr, labels, cluster_centers):
     for label in unique_labels:
         indices = np.where(labels == label)[0]
         cluster_rows = arr[indices]
-        cluster_angles = calculate_angle(cluster_rows, cluster_centers[label])
+        cluster_angles = calculate_abs_angle(cluster_rows, np.expand_dims(cluster_centers[label], axis=0))
         angles_per_label[label] = cluster_angles
 
     return angles_per_label
+
+
+def get_angles_between_centroids(cluster_centers):
+    """
+    Get angles in degrees between cluster centroids 
+    Args:
+        cluster_centers (np.ndarray): Array of cluster centers 
+
+    Returns:
+        angles: Angles between cluster centroids 
+    """
+    # Calculate all pairwise dot products
+    dot_products = cluster_centers @ cluster_centers.T
+    norms = np.linalg.norm(cluster_centers, axis=1).reshape(-1, 1)
+    norm_products = norms @ norms.T
+    cos_thetas = dot_products / norm_products
+
+    # Calculate angles using arccos directly
+    angles = np.degrees(np.arccos(np.clip(cos_thetas, -1.0, 1.0)))
+
+    return angles
 
 
 def modified_cosine_dist(a, b): 
