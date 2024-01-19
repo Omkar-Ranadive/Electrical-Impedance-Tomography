@@ -99,10 +99,10 @@ if __name__ == '__main__':
         # Get angles between the cluster centers 
         cart_centroid_angles = utils_math.get_angles_between_centroids(clust_centers)
         ang_centroid_angles = utils_math.get_angles_between_centroids(ang_centers) 
-        utils_vis.plot_centroid_angle_heatmap(cart_centroid_angles, title="Cartesian Clustering",
+        utils_vis.plot_centroid_angle_heatmap(cart_centroid_angles, title="Cartesian",
                                               filename=EXP_DIR / (f'{C}contacts_{M}polys_D{D}_cartesian'
                                                                   f'_centroids_angles.png'))
-        utils_vis.plot_centroid_angle_heatmap(ang_centroid_angles, title="Angular Clustering",
+        utils_vis.plot_centroid_angle_heatmap(ang_centroid_angles, title="Angular",
                                               filename=EXP_DIR / (f'{C}contacts_{M}polys_D{D}_angular'
                                                                   f'_centroids_angles.png'))
 

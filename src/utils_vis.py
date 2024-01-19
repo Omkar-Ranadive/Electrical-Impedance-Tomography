@@ -158,7 +158,7 @@ def plot_angle_distribution(angles_per_cluster, indices_dict, title, filename, b
             axes[index].axvline(x=angle, color='red', linewidth=3, linestyle='dotted', label='Selected Indices')
 
     fig.suptitle(f"{title}", fontsize='small')
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0, 1, 0.99])
     fig.savefig(filename, dpi=300)
 
 
