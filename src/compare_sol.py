@@ -23,8 +23,16 @@ args = parser.parse_args()
 #          'clustering_ang30_mag.csv': 'Clust_ang30_mag', 'clustering_ang40_mag.csv': 'Clust_ang40_mag.csv',
 #          'EnsembleGenetic.csv': 'EnsembleGenetic'}
 
-files = {'clustering_angle.csv': 'Clust_angle', 'clustering_mag.csv': 'Clust_mag', 
-          'clustering_ang40_mag.csv': 'Clust_ang40_mag.csv',  'EnsembleGenetic.csv': 'EnsembleGenetic'}
+# files = {'clustering_angle.csv': 'Clust_angle', 'clustering_mag.csv': 'Clust_mag', 
+#           'clustering_ang40_mag.csv': 'Clust_ang40_mag.csv',  'EnsembleGenetic.csv': 'EnsembleGenetic'}
+
+# files = {'clustering_angle.csv': 'Clust_angle', 'clustering_ang40_20mag.csv': 'Clust_ang40_20mag', 
+#           'clustering_ang40_mag.csv': 'Clust_ang40_mag',  'EnsembleGenetic.csv': 'EnsembleGenetic'}
+
+files = {'clustering_ang40_20mag.csv': 'Clust_ang40_20mag', 
+          'EnsembleGenetic.csv': 'EnsembleGenetic', 
+          'clustering_ang40_20mag_v4.csv': 'Clust_ang40_20mag_v4'}
+
 
 EXP_DIR = EXP_PATH / 'OptimizationMatrices'
 SAVE_DIR = EXP_DIR / args.exp_name
@@ -33,6 +41,7 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 fig2, ax2 = plt.subplots(1, 1, figsize=(10, 8))
 fig3, ax3 = plt.subplots(1, 1, figsize=(10, 8)) 
+fig4, ax4 = plt.subplots(1, 1, figsize=(10, 8))
 colors = sns.color_palette('husl', len(files))
 marker_styles = ['o', 's', '^', 'D', 'v', '>', '<', 'p', '*']
 i = 0 
@@ -49,6 +58,11 @@ for file, name in files.items():
     df_sorted = df.sort_values(by='D: Measurements')
     volumes_sorted = df_sorted['V^(1/D)']
     ax3.scatter(df_sorted['D: Measurements'], volumes_sorted, label=name, alpha=0.7, color=colors[i], marker=marker)
+
+    # Plot time taken (sorted by measurements (D))
+    if 'Elasped Time' in df_sorted.columns: 
+        ax4.plot(df_sorted['D: Measurements'], df_sorted['Elasped Time'], label=name, alpha=0.7, 
+                 c=colors[i], marker=marker)
 
     i += 1
 
@@ -72,3 +86,10 @@ ax3.set_ylabel('Sensitivity Volume (V^(1/D))')
 ax3.legend(loc='upper left', bbox_to_anchor=(1, 1))
 fig3.tight_layout()
 fig3.savefig(SAVE_DIR / 'volume_compare_sorted_m_all.png', dpi=300)
+
+ax4.set_title('Time Comparison')
+ax4.set_xlabel('Measurements (D)')
+ax4.set_ylabel('Time taken (in seconds)')
+ax4.legend(loc='upper left', bbox_to_anchor=(1, 1))
+fig4.tight_layout()
+fig4.savefig(SAVE_DIR / 'volume_compare_sorted_m_time_all.png', dpi=300)

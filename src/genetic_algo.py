@@ -397,6 +397,3 @@ class GreedyGenetic(Genetic):
 
         best_dict['best_indices'] = sorted(best_dict['best_indices'])
         return best_dict 
-
-
-    

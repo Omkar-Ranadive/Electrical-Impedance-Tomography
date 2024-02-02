@@ -20,7 +20,7 @@ def greedy_approach(arr, num_entries):
 
     Returns: 
         final_volume (float): Max volume obtained 
-        selected_indice (list): Indices selected to calculate the volume 
+        selected_indices (list): Indices selected to calculate the volume 
     """
 
     total_indices = np.arange(0, arr.shape[0])
@@ -153,7 +153,7 @@ def left_singular_matrix_approach(arr, num_entries):
 
     Returns:
         final_volume (float): Max volume obtained 
-        selected_indice (list): Indices selected to calculate the volume    
+        selected_indices (list): Indices selected to calculate the volume    
     """
     U, s, Vh = linalg.svd(arr)
     avg_singular_values = np.mean(U, axis=1)
@@ -173,7 +173,7 @@ def ortho_kmeans(arr, num_entries):
 
     Returns:
         final_volume (float): Max volume obtained 
-        selected_indice (list): Indices selected to calculate the volume    
+        selected_indices (list): Indices selected to calculate the volume    
     """
     kmeans_ortho = custom_kmeans.OrthogonalKMeans(n_clusters=num_entries, regularization_strength=0.5)
     kmeans_ortho.fit(arr)
@@ -200,7 +200,7 @@ def highest_mag_approach(arr, num_entries, seed=0):
 
     Returns:
         final_volume (float): Max volume obtained 
-        selected_indice (list): Indices selected to calculate the volume        
+        selected_indices (list): Indices selected to calculate the volume        
     """
     
     param_dict = {'n_clusters': num_entries, 'n_init': 'auto', 'random_state': seed}
@@ -228,7 +228,7 @@ def closest_to_cluster_centroids_approach(arr, num_entries, seed=0):
 
     Returns:
         final_volume (float): Max volume obtained 
-        selected_indice (list): Indices selected to calculate the volume        
+        selected_indices (list): Indices selected to calculate the volume        
     """
 
     param_dict = {'n_clusters': num_entries, 'n_init': 'auto', 'random_state': seed}
@@ -267,14 +267,13 @@ def closest_to_cluster_centroids_approach_v2(arr, num_entries, angle_threshold, 
 
     Returns:
         final_volume (float): Max volume obtained 
-        selected_indice (list): Indices selected to calculate the volume        
+        selected_indices (list): Indices selected to calculate the volume        
     """
     param_dict = {'n_clusters': num_entries, 'n_init': 'auto', 'random_state': seed}
     labels, clust_centers, clust_dist = utils_math.get_kmeans_clusters(arr, param_dict)
     
     # Find the angles within a cluster for all points w.r.t centroids of each cluster 
     unique_labels = np.unique(labels)
-    angles_per_label = {}
     selected_indices = []
     for label in unique_labels:
         indices = np.where(labels == label)[0]
@@ -298,4 +297,125 @@ def closest_to_cluster_centroids_approach_v2(arr, num_entries, angle_threshold, 
     return final_volume, sorted(selected_indices)
 
 
+def closest_to_cluster_centroids_approach_v3(arr, num_entries, angle_threshold, num_mags, seed=0):
+    """
+    Cluster the data where num_clusters = num_entries. A list of "candidate" indices is formed by combining previous 
+    techniques. 
+    1. Add the top num_mags number of highest_magnitude candidates into the list 
+    2. Add the min angle from each cluster into the list 
+    3. Add the highest mag from each cluster within the anglular threshold into the list 
 
+    Then run a simple greedy algorithm on this candidates list to get the final result.  
+
+    Args:
+        arr (np.ndrray): Input array 
+        num_entries (int): Subset to be used to find max volume.
+        angle_threshold (float): Angle threshold in degrees. Points within min_angle + angle_threshold are selected
+        num_mags (int): Amount of highest magnitude entries to select as candidates 
+        seed (int, optional): Random seed to use while clustering . Defaults to 0.
+
+    Returns:
+        final_volume (float): Max volume obtained 
+        selected_indices (list): Indices selected to calculate the volume        
+    """
+    param_dict = {'n_clusters': num_entries, 'n_init': 'auto', 'random_state': seed}
+    labels, clust_centers, clust_dist = utils_math.get_kmeans_clusters(arr, param_dict)
+    
+    # Find the angles within a cluster for all points w.r.t centroids of each cluster 
+    unique_labels = np.unique(labels)
+    candidates = []
+
+    # Add top num_mags entries to candidates 
+    mags, sorted_mags = utils_math.get_norm_with_rank(arr)
+    num_mags = min(len(arr), num_mags)
+    candidates.extend(list(sorted_mags[:num_mags]))
+
+    for label in unique_labels:
+        indices = np.where(labels == label)[0]
+        cluster_rows = arr[indices]
+        cluster_angles = utils_math.calculate_abs_angle(cluster_rows, np.expand_dims(clust_centers[label], axis=0))
+        cluster_mags = mags[indices]
+        
+        # Get minimum angle 
+        min_angle_index = np.argmin(cluster_angles)
+        min_angle = cluster_angles[min_angle_index] 
+
+        # Add the minimum angle to list of candidates 
+        candidates.append(indices[min_angle_index])
+
+        # Find all angles within a threshold of minimum angle
+        selected_angle_indices = np.where(cluster_angles <= min_angle + angle_threshold)[0]
+        # Get the highest magnitude for points within this threshold 
+        highest_mag_index = np.argmax(cluster_mags[selected_angle_indices])
+        # Add the highest magnitude within the angle threshold to candidates 
+        candidates.append(indices[selected_angle_indices][highest_mag_index])
+    
+    # Only keep the unique candidate indices 
+    candidates = np.unique(np.array(candidates))
+    # Run the candidates through greedy approach to get final selection 
+    final_volume, selected_indices = greedy_approach(arr[candidates], num_entries)
+
+    return final_volume, sorted(selected_indices)
+
+
+def closest_to_cluster_centroids_approach_v4(arr, num_entries, angle_threshold, num_mags, seed=0):
+    """
+    Cluster the data where num_clusters = num_entries. A list of "candidate" indices is formed by combining previous 
+    techniques. 
+    1. Add the top num_mags number of highest_magnitude candidates into the list 
+    2. Add the min angle from each cluster into the list 
+    3. Add the top num_mags from each cluster within the anglular threshold into the list 
+
+    Then run a simple greedy algorithm on this candidates list to get the final result.  
+
+    Args:
+        arr (np.ndrray): Input array 
+        num_entries (int): Subset to be used to find max volume.
+        angle_threshold (float): Angle threshold in degrees. Points within min_angle + angle_threshold are selected
+        num_mags (int): Amount of highest magnitude entries to select as candidates 
+        seed (int, optional): Random seed to use while clustering . Defaults to 0.
+
+    Returns:
+        final_volume (float): Max volume obtained 
+        selected_indices (list): Indices selected to calculate the volume        
+    """
+    param_dict = {'n_clusters': num_entries, 'n_init': 'auto', 'random_state': seed}
+    labels, clust_centers, clust_dist = utils_math.get_kmeans_clusters(arr, param_dict)
+    
+    # Find the angles within a cluster for all points w.r.t centroids of each cluster 
+    unique_labels = np.unique(labels)
+    candidates = []
+
+    # Add top num_mags entries to candidates 
+    mags, sorted_mags = utils_math.get_norm_with_rank(arr)
+    num_mags = min(len(arr), num_mags)
+    candidates.extend(list(sorted_mags[:num_mags]))
+
+    for label in unique_labels:
+        indices = np.where(labels == label)[0]
+        cluster_rows = arr[indices]
+        cluster_angles = utils_math.calculate_abs_angle(cluster_rows, np.expand_dims(clust_centers[label], axis=0))
+        cluster_mags = mags[indices]
+        
+        # Get minimum angle 
+        min_angle_index = np.argmin(cluster_angles)
+        min_angle = cluster_angles[min_angle_index] 
+
+        # Add the minimum angle to list of candidates 
+        candidates.append(indices[min_angle_index])
+
+        # Find all angles within a threshold of minimum angle
+        selected_angle_indices = np.where(cluster_angles <= min_angle + angle_threshold)[0]
+
+        # Get top num_mags indices within that threshold 
+        top_mags_indices = np.argsort(cluster_mags[selected_angle_indices])[::-1]
+        selected_mags_indices = top_mags_indices[:min(len(top_mags_indices), num_mags)]
+
+        candidates.extend(list(indices[selected_angle_indices][selected_mags_indices]))
+
+    # Only keep the unique candidate indices 
+    candidates = np.unique(np.array(candidates))
+    # Run the candidates through greedy approach to get final selection 
+    final_volume, selected_indices = greedy_approach(arr[candidates], num_entries)
+
+    return final_volume, sorted(selected_indices)
