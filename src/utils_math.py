@@ -262,6 +262,25 @@ def get_angles_between_centroids(cluster_centers):
     return angles
 
 
+def get_mags_per_cluster(arr, labels): 
+    """
+    Get magnitudes for each point in each cluster.
+    Args:
+        arr (np.ndarray): Input array
+        labels (np.ndarray): Cluster labels for each point  
+
+    Returns:
+        mags_per_label (dict): Dictionary of the form {clust_label: [mag1, mag2...]} containing the magnitudes 
+                               between each point and its cluster center. 
+    """
+    mags_per_label = {} 
+    for label in sorted(np.unique(labels)): 
+        indices = np.where(labels == label)[0]
+        mags_per_label[label] = np.linalg.norm(arr[indices, :], axis=1)
+    
+    return mags_per_label
+
+
 def modified_cosine_dist(a, b): 
     """
     Modified cosine distance to move opposite vectors to same quadrant 

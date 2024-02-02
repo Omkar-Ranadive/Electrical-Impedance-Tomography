@@ -162,6 +162,42 @@ def plot_angle_distribution(angles_per_cluster, indices_dict, title, filename, b
     fig.savefig(filename, dpi=300)
 
 
+def plot_mag_distribution(mags_per_cluster, indices_dict, title, filename): 
+    """
+    Plot the histogram of magnitudes per cluster 
+    Args:
+        angles_per_cluster (dict): Dict of the type: {clust_label1: [mag1, mag2...], clust_label2: [mag1...]}
+        indices_dict (dict): Dict of selected indices of the type: {clust_label1: [mag1, mag2...], ..}
+        filename (str/path): File Path to save the image 
+    """
+    # Plotting separate histograms for each label
+    fig, axes = plt.subplots(nrows=len(mags_per_cluster), figsize=(8, 2 * len(mags_per_cluster)))
+
+    max_mag = 0 
+    for i, (label, mags) in enumerate(mags_per_cluster.items()):
+        cur_max = np.max(mags) 
+        if cur_max > max_mag: 
+            max_mag = cur_max
+
+        axes[i].hist(mags, edgecolor='black')
+        axes[i].set_title(f'Distribution of Mags for Label {label}')
+        axes[i].set_xlabel('Magnitude')
+        axes[i].set_ylabel('Frequency')
+
+    # Set the x-axis limit to max possible mag out of all clusters 
+    for i in range(len(mags_per_cluster)):
+        axes[i].set_xlim(0,  max_mag)  # Set x-axis limits from 0 to 90
+
+    # Plot the selected indices separately on the histogram 
+    for index, mags in indices_dict.items(): 
+        for mag in mags:
+            axes[index].axvline(x=mag, color='red', linewidth=3, linestyle='dotted', label='Selected Indices')
+
+    fig.suptitle(f"{title}", fontsize='small')
+    fig.tight_layout(rect=[0, 0, 1, 0.99])
+    fig.savefig(filename, dpi=300)
+
+
 def plot_magnitude_ranks(magnitudes, sorted_mag_indices, selected_indices_ranks, filename): 
     fig, axes = plt.subplots(1, 1) 
 
@@ -207,3 +243,4 @@ def plot_cluster_distribution(clust_dict, title, filename):
 
     fig.tight_layout()
     fig.savefig(filename, dpi=300)
+

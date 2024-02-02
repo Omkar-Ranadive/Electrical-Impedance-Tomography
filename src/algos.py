@@ -299,9 +299,3 @@ def closest_to_cluster_centroids_approach_v2(arr, num_entries, angle_threshold, 
 
 
 
-    
-
-    
-
-
-

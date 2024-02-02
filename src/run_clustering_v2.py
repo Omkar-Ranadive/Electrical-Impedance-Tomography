@@ -14,12 +14,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--start", default=0, type=int, help="Starting index of data list")
     parser.add_argument("--end", default=len(data_list), type=int, help="Ending index of data list")
+    parser.add_argument("--angles", nargs="+", help="Angle Threshold")
     args = parser.parse_args()
 
-
+    args.angles = list(map(float, args.angles))
     columns = ['C: Contacts', 'M: polys', 'D: Measurements', 'V^(1/D)', 'Indices']
 
-    for angle in [5, 10, 15]: 
+    for angle in args.angles: 
         df = []
         print(f"Running for angle threshold: {angle}")
         for mat_info in data_list[args.start:args.end]: 

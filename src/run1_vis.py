@@ -75,7 +75,7 @@ if __name__ == '__main__':
         utils_vis.plot_clust_index_dist(cart_counts, ang_counts, 
                                     filename=EXP_DIR / f'clust_dist_ensembleGen.png', algo_info='ensembleGen')
 
-        # Get distribution of angles w.r.t cluster centers 
+        # Get distribution of angles w.r.t cluster centers and distribution of magnitudes within clusters 
         if num_entries <= 20: 
             cartesian_angles = utils_math.get_angles_per_cluster(arr, clust_labels_cartesian, clust_centers)
             cartesian_indices_angles = utils_math.get_angles_per_cluster(arr[indices], clust_labels_cartesian[indices], 
@@ -94,6 +94,12 @@ if __name__ == '__main__':
             utils_vis.plot_angle_distribution(angular_angles, indices_dict=angular_indices_angles,
                                               title="Angular Clustering",
                                               filename=EXP_DIR / f'{C}contacts_{M}polys_D{D}_angular_angle_dist.png')
+            
+
+            cartesian_mags = utils_math.get_mags_per_cluster(arr, clust_labels_cartesian) 
+            cartesian_indices_mags = utils_math.get_mags_per_cluster(arr[indices], clust_labels_cartesian[indices])
+            utils_vis.plot_mag_distribution(cartesian_mags, cartesian_indices_mags, title="Cartesian Clustering", 
+                                            filename=EXP_DIR / f'{C}contacts_{M}polys_D{D}_cartesian_mag_dist.png')
 
 
         # Get angles between the cluster centers 
@@ -113,7 +119,6 @@ if __name__ == '__main__':
         utils_vis.plot_magnitude_ranks(magnitudes, sorted_mag_indices, indices_ranks, 
                                        filename=EXP_DIR / f'{C}contacts_{M}polys_D{D}_mag_ranks.png')
         
-
         logger.handlers.clear()
 
 
