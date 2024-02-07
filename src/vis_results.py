@@ -25,6 +25,7 @@ if __name__ == '__main__':
         print(f"Running for: {C}contacts_{M}polys_D{D}")
         data = sio.loadmat(DATA_PATH / 'OptimizationMatrices' / f'{C}contacts_{M}polys.mat')
         arr = data['JGQ']
+        config = data['configs']
         print(arr.shape)
         EXP_DIR = EXP_PATH / 'OptimizationMatrices' / f'{C}contacts_{M}polys_D{D}'
         os.makedirs(EXP_DIR, exist_ok=True)
@@ -37,6 +38,7 @@ if __name__ == '__main__':
         logging.info("*"*20)
         logging.info(f"{C}contacts_{M}polys_D{D}")
         logging.info(f"Shape of array: {arr.shape}")
+        logging.info(f"Shape of config: {config.shape}")
         # Get magnitudes and indices sorted by magnitude 
         magnitudes, sorted_mag_indices = utils_math.get_norm_with_rank(arr) 
 
@@ -66,7 +68,7 @@ if __name__ == '__main__':
         vol2 = row['V^(1/D) #2']
         volumes1.append(vol1) 
         volumes2.append(vol2)
-        indices = np.array(ast.literal_eval(row['Indices #2']), dtype=int)  # Convert string to numpy array 
+        indices = np.array(ast.literal_eval(row['Indices #2']), dtype=int)  # Convert string to numpy array         
 
         # Plot number of selected indices belonging to each cluster 
         cart_dict, cart_counts = utils_math.get_cluster_for_index(clust_labels_cartesian, indices)
@@ -118,6 +120,10 @@ if __name__ == '__main__':
         logging.info(indices_ranks)
         utils_vis.plot_magnitude_ranks(magnitudes, sorted_mag_indices, indices_ranks, 
                                        filename=EXP_DIR / f'{C}contacts_{M}polys_D{D}_mag_ranks.png')
+        
+        # Plot configs (electrode configuration)
+        utils_vis.plot_electrodes(config, indices, title='Electrode Config', 
+                                  filename=EXP_DIR / f'{C}contacts_{M}polys_D{D}_config.png')
         
         logger.handlers.clear()
 

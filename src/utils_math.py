@@ -168,8 +168,8 @@ def get_cluster_for_index(labels, subset_indices):
     Given cluster labels and selected indices, generate index dict of type {index: clust_label...} and label count dict 
     of type {label: total_count....} 
     Args:
-        labels (np.ndarray): Cluster labels
-        subset_indices (np.ndarray): Selected indices 
+        index_dict (dict): {index: clust_label...}
+        label_counts (dict): {label: total_count....} 
     """
     index_dict = dict(sorted(zip(subset_indices, labels[subset_indices]), key=lambda x: x[1]))    
 
@@ -248,7 +248,7 @@ def get_angles_between_centroids(cluster_centers):
         cluster_centers (np.ndarray): Array of cluster centers 
 
     Returns:
-        angles: Angles between cluster centroids 
+        angles (np.ndarray): Angles between cluster centroids 
     """
     # Calculate all pairwise dot products
     dot_products = cluster_centers @ cluster_centers.T

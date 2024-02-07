@@ -6,6 +6,7 @@ from matplotlib.colors import ListedColormap
 from sklearn.manifold import TSNE
 import numpy as np 
 from matplotlib.ticker import MaxNLocator
+import matplotlib.markers as mmarkers
 
 
 # Plotting constants 
@@ -98,6 +99,15 @@ def plot_tsne(X, labels):
 
 
 def plot_clust_index_dist(cart_counts, ang_counts, filename, algo_info):
+    """
+    Bar plot of selected indices belonging to cluster labels. 
+    Two plots are made -- Cartesian clustering and Angular Clustering 
+    Args:
+        cart_counts (dict): Dict of type {label: total_count_of_selected_indices....}
+        ang_counts (dict): Dict of type {label: total_count_of_selected_indices....}
+        filename (str/path): File Path to save the image 
+        algo_info (str): Algorithm used for selecting indices (used as title of the plot)
+    """
     fig, axs = plt.subplots(1, 2, figsize=(10, 5)) 
 
     # Subplot for cartesian clustering 
@@ -122,6 +132,14 @@ def plot_clust_index_dist(cart_counts, ang_counts, filename, algo_info):
 
 
 def compare_volumes(volumes1, volumes2, filename, algo_info): 
+    """
+    Compare two sets of sensitivity volumes
+    Args:
+        volumes1 (np.ndarray/list): Array of volumes
+        volumes2 (np.ndarray/list): Array of volumes
+        filename (str/path): File Path to save the image 
+        algo_info (str): Algorithm used for selecting indices (used as title of the plot)
+    """
     fig, axes = plt.subplots(1, 1) 
 
     axes.scatter(range(0, len(volumes1)), volumes1, c='b', marker='x', label='Volume 1')
@@ -199,6 +217,14 @@ def plot_mag_distribution(mags_per_cluster, indices_dict, title, filename):
 
 
 def plot_magnitude_ranks(magnitudes, sorted_mag_indices, selected_indices_ranks, filename): 
+    """
+    Plot magnitudes sorted in descending arrays for all rows. Highlight the magnitudes of the selected indices. 
+    Args:
+        magnitudes (np.ndarray): Array containing magnitudes of all indicies
+        sorted_mag_indices (np.ndarray): Array containing indices of sorted magnitudes (in descending order)
+        selected_indices_ranks (np.ndarray):  Dictionary of the type {index: rank....}
+        filename (str/path): File Path to save the image 
+    """
     fig, axes = plt.subplots(1, 1) 
 
     axes.scatter(range(0, len(sorted_mag_indices)), magnitudes[sorted_mag_indices], alpha=0.7)
@@ -216,6 +242,13 @@ def plot_magnitude_ranks(magnitudes, sorted_mag_indices, selected_indices_ranks,
 
 
 def plot_centroid_angle_heatmap(angles, title, filename):
+    """
+    Plot angles between all cluster centers (centroids) as a heatmap
+    Args:
+        angles (np.ndarray): Angles between cluster centroids
+        title (str): Title of the plot 
+        filename (str/path): File Path to save the image 
+    """
     fig, axes = plt.subplots(1, 1) 
     num_clusters = len(angles) 
     annot = True if num_clusters <= 10 else False 
@@ -232,6 +265,13 @@ def plot_centroid_angle_heatmap(angles, title, filename):
 
 
 def plot_cluster_distribution(clust_dict, title, filename):
+    """
+    Plot total number of entries present in each cluster 
+    Args:
+        clust_dict (dict): Dictionary of the type {clust_label: num_entries, ..}
+        title (str): Title of the plot
+        filename (str/path): File Path to save the image 
+    """
     fig, ax = plt.subplots(1, 1) 
     clusters, num_entries = clust_dict.keys(), clust_dict.values()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
@@ -243,4 +283,88 @@ def plot_cluster_distribution(clust_dict, title, filename):
 
     fig.tight_layout()
     fig.savefig(filename, dpi=300)
+
+
+def mscatter(x, y, ax=None, m=None, **kw):
+    """
+    Marker lists are not yet allowed in matplotlib. This function provides a temporary solution. 
+    Reference: https://github.com/matplotlib/matplotlib/issues/11155
+    """
+    
+    if not ax: ax=plt.gca()
+    sc = ax.scatter(x,y, **kw)
+    if (m is not None) and (len(m)==len(x)):
+        paths = []
+        for marker in m:
+            if isinstance(marker, mmarkers.MarkerStyle):
+                marker_obj = marker
+            else:
+                marker_obj = mmarkers.MarkerStyle(marker)
+            path = marker_obj.get_path().transformed(
+                        marker_obj.get_transform())
+            paths.append(path)
+        sc.set_paths(paths)
+    return sc
+
+
+def plot_electrodes(configs, indices, title, filename):
+    """
+    Plot the electrode configuration for matrices (input/output electrodes used for each row). 
+    The function highlights the electrodes of selected indices. 
+    Args:
+        configs (np.ndarray): Array of electrode configuration of shape (num_rows, 4). 
+                            First two cols of each row are input electrodes, last two are output electrodes 
+        indices (np.ndarray): Selected indices 
+        title (str): Title of the plot 
+        filename (str/path): File Path to save the image 
+    """
+    fig, ax = plt.subplots(1, 1)
+
+    default_incolor = 'lightsteelblue'  # Light blue
+    default_outcolor = 'lightsalmon'  # Light orange
+    num_rows = len(configs)
+
+    # Initialize with default values 
+    size = np.full(shape=num_rows, fill_value=10, dtype=int) 
+    alpha = np.full(shape=num_rows, fill_value=0.5, dtype=float) 
+    marker = np.full(shape=num_rows, fill_value='o', dtype=object) 
+    incolor = np.full(shape=num_rows, fill_value=default_incolor, dtype=object) 
+    outcolor = np.full(shape=num_rows, fill_value=default_outcolor, dtype=object) 
+
+    # Update properties for selected indices
+    size[indices] = 45  # Larger size
+    alpha[indices] = 1.0  # No transparency
+    marker[indices] = 'x'  # Square marker
+    incolor[indices] = 'darkblue'  # Dark blue
+    outcolor[indices] = 'darkred'  # Dark red
+
+    size = np.repeat(size, 2) 
+    alpha = np.repeat(alpha, 2)
+    marker = np.repeat(marker, 2) 
+    incolor = np.repeat(incolor, 2) 
+    outcolor = np.repeat(outcolor, 2)
+
+    # ax.scatter(np.repeat(np.arange(num_rows), 2), configs[:, :2].flatten(), s=size, marker=marker, 
+    #            alpha=alpha, color=incolor)
+    # ax.scatter(np.repeat(np.arange(num_rows), 2), configs[:, 2:].flatten(), s=size, marker=marker, 
+    #            alpha=alpha, color=outcolor)
+
+    mscatter(np.repeat(np.arange(num_rows), 2), configs[:, :2].flatten(), s=size, m=marker, 
+               alpha=alpha, c=incolor, ax=ax)
+    mscatter(np.repeat(np.arange(num_rows), 2), configs[:, 2:].flatten(), s=size, m=marker, 
+               alpha=alpha, c=outcolor, ax=ax)
+
+
+    ax.set_xlabel('Row Index')
+    ax.set_ylabel('Electrode Number')
+    ax.set_title(title)
+    ax.set_xticks(np.arange(len(configs)))
+    ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+
+    ax.legend(['Input electrodes', 'Output electrodes'], loc='upper right')
+
+    fig.tight_layout()
+    fig.savefig(filename, dpi=300)
+
 
