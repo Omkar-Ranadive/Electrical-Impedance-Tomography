@@ -8,6 +8,11 @@ from utils_math import cal_vol
 
 class VolumeMaximizationEnv:
     def __init__(self, arr, num_entries):
+        """
+        Args:
+            arr (np.ndarray): Input array 
+            num_entries (int): Measurements, i.e, numbers of rows to be selected
+        """
         self.arr = arr
         self.num_entries = num_entries
         self.n, self.m = arr.shape
@@ -95,6 +100,25 @@ class ReplayBuffer():
 
 def train_dqn_agent(env, model, optimizer, num_episodes, gamma, target_update_freq, batch_size, 
                     epsilon, decay_rate, max_it=10000):
+    """
+    Args: 
+        env: (class obj): Environment class object (VolumeMaximizationEnv)
+        model (torch): PyTorch model 
+        optimizer (torch): PyTorch Optimizer 
+        num_episodes (int): Number of episodes to run the training for 
+        gamma (float): Discount factor 
+        target_update_freq (int): The target model gets updated every target_update_freq steps 
+        batch_size (int): Training mini-batch size 
+        epsilon (float): Exploration parameter to generate actions randomly 
+        decay_rate (float): Rate with which epsilon decays over episodes 
+        max_it (int): Maximum amount of steps which the agent is allowed to take in an episode. 
+
+    Returns:
+        best_dict (dict): Solution dict of the type: 
+                        {'best_volume': vol, 'best_indices': [], 'best_episode': ep_num, 'rewards': [], 'volumes': []}
+        model (torch): Trained pytorch model 
+    """
+
     target_model = DQN(env.state_size, env.action_size)
     target_model.load_state_dict(model.state_dict())
 
@@ -159,12 +183,14 @@ def train_dqn_agent(env, model, optimizer, num_episodes, gamma, target_update_fr
                     target_model.load_state_dict(model.state_dict())
         
         volume, selected_rows = env.get_results() 
-        volumes_per_episode.append(volume)
-        if best_dict['best_volume'] < volume: 
-            best_dict['best_volume'] = volume
-            best_dict['best_indices'] = selected_rows
-            best_dict['best_episode'] = episode
-              
+        # Only consider the results if the environment was solved (i.e, done=true)
+        if len(selected_rows) == env.num_entries:
+            volumes_per_episode.append(volume)
+            if best_dict['best_volume'] < volume: 
+                best_dict['best_volume'] = volume
+                best_dict['best_indices'] = selected_rows
+                best_dict['best_episode'] = episode  
+       
         rewards_per_episode.append(np.mean(rewards_within_episode))
 
         if episode % 10 == 0:

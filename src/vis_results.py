@@ -35,10 +35,10 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.INFO, filename=str(EXP_DIR / 'info_vis.log'), 
                             format='%(message)s', filemode='w')
         logger=logging.getLogger() 
-        logging.info("*"*20)
-        logging.info(f"{C}contacts_{M}polys_D{D}")
-        logging.info(f"Shape of array: {arr.shape}")
-        logging.info(f"Shape of config: {config.shape}")
+        logger.info("*"*20)
+        logger.info(f"{C}contacts_{M}polys_D{D}")
+        logger.info(f"Shape of array: {arr.shape}")
+        logger.info(f"Shape of config: {config.shape}")
         # Get magnitudes and indices sorted by magnitude 
         magnitudes, sorted_mag_indices = utils_math.get_norm_with_rank(arr) 
 
@@ -116,8 +116,8 @@ if __name__ == '__main__':
 
         # Plot the ranks (based on magnitude) for the selected indicies 
         indices_ranks = utils_math.get_indices_rank(sorted_mag_indices, indices)
-        logging.info("Magnitude ranks of selected indices")
-        logging.info(indices_ranks)
+        logger.info("Magnitude ranks of selected indices")
+        logger.info(indices_ranks)
         utils_vis.plot_magnitude_ranks(magnitudes, sorted_mag_indices, indices_ranks, 
                                        filename=EXP_DIR / f'{C}contacts_{M}polys_D{D}_mag_ranks.png')
         

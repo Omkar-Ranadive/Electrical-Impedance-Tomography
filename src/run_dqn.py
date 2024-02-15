@@ -43,14 +43,14 @@ filename = (f'dqn_e{args.episodes}_b{args.batch_size}_l{save_friendly(args.lr)}'
 logging.basicConfig(level=logging.INFO, filename=(EXP_DIR / f'{filename}').with_suffix('.log'), 
                     format='%(message)s')
 logger = logging.getLogger() 
-logging.info("*"*20)
-logging.info(f"Array: {C}contacts_{M}polys_{D}, Shape: {arr.shape}") 
-logging.info(f'Measurements (num entries): {num_entries}')
-logging.info("*"*5)
-logging.info(f"Hyperparameters")
-logging.info(f"Episodes: {args.episodes}, Learning Rate: {args.lr}, Batch Size: {args.batch_size}")
-logging.info(f"Target update Freq: {args.tfreq}, Discount Factor: {args.gamma}")
-logging.info(f'Epsilon: {args.epsilon}, Decay Rate: {args.dr}')
+logger.info("*"*20)
+logger.info(f"Array: {C}contacts_{M}polys_{D}, Shape: {arr.shape}") 
+logger.info(f'Measurements (num entries): {num_entries}')
+logger.info("*"*5)
+logger.info(f"Hyperparameters")
+logger.info(f"Episodes: {args.episodes}, Learning Rate: {args.lr}, Batch Size: {args.batch_size}")
+logger.info(f"Target update Freq: {args.tfreq}, Discount Factor: {args.gamma}")
+logger.info(f'Epsilon: {args.epsilon}, Decay Rate: {args.dr}')
 
 
 env = dqn_algo.VolumeMaximizationEnv(arr, num_entries=num_entries)
