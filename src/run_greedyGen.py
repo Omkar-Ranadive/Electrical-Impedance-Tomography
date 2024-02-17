@@ -1,4 +1,4 @@
-from genetic_algo import GreedyGenetic
+from algo_genetic import GreedyGenetic
 from constants import DATA_PATH, EXP_PATH, data_list
 import time 
 import utils_math

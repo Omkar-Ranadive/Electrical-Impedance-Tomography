@@ -1,4 +1,4 @@
-from genetic_algo import Genetic, EnsembleGenetic
+from algo_genetic import Genetic, EnsembleGenetic
 from constants import DATA_PATH, EXP_PATH, data_list
 import time 
 import utils_math

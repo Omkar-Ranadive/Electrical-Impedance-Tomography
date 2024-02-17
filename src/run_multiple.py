@@ -3,7 +3,7 @@ from constants import DATA_PATH, EXP_PATH
 import scipy.io as sio
 import numpy as np 
 import algos 
-from genetic_algo import Genetic
+from algo_genetic import Genetic
 import logging 
 import argparse 
 import os 

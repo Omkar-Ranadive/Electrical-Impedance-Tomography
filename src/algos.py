@@ -4,7 +4,7 @@ from constants import DATA_PATH
 import scipy.io as sio
 from itertools import combinations
 from sklearn.cluster import DBSCAN
-import custom_kmeans
+import algo_custom_kmeans
 from scipy import linalg 
 
 
@@ -125,7 +125,7 @@ def cosine_clustering(arr, num_entries):
         selected_indice (list): Indices selected to calculate the volume    
         labels (np.ndarray): Cluster labels for each point in the array        
     """
-    ck_obj = custom_kmeans.CosineKMeans(n_clusters=num_entries, max_iterations=50000)
+    ck_obj = algo_custom_kmeans.CosineKMeans(n_clusters=num_entries, max_iterations=50000)
     ck_obj.fit(arr) 
     labels = ck_obj.predict(arr) 
     unique, counts = np.unique(labels, return_counts=True)
@@ -175,7 +175,7 @@ def ortho_kmeans(arr, num_entries):
         final_volume (float): Max volume obtained 
         selected_indices (list): Indices selected to calculate the volume    
     """
-    kmeans_ortho = custom_kmeans.OrthogonalKMeans(n_clusters=num_entries, regularization_strength=0.5)
+    kmeans_ortho = algo_custom_kmeans.OrthogonalKMeans(n_clusters=num_entries, regularization_strength=0.5)
     kmeans_ortho.fit(arr)
     labels = kmeans_ortho.labels_
     unique, counts = np.unique(labels, return_counts=True)

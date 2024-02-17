@@ -1,4 +1,4 @@
-import dqn_algo 
+import algo_dqn 
 import scipy.io as sio
 from constants import DATA_PATH, EXP_PATH
 import utils_math
@@ -53,11 +53,11 @@ logger.info(f"Target update Freq: {args.tfreq}, Discount Factor: {args.gamma}")
 logger.info(f'Epsilon: {args.epsilon}, Decay Rate: {args.dr}')
 
 
-env = dqn_algo.VolumeMaximizationEnv(arr, num_entries=num_entries)
-model = dqn_algo.DQN(env.state_size, env.action_size)
+env = algo_dqn.VolumeMaximizationEnv(arr, num_entries=num_entries)
+model = algo_dqn.DQN(env.state_size, env.action_size)
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 start_time = time.time()
-best_dict, model = dqn_algo.train_dqn_agent(env, model, optimizer, num_episodes=args.episodes, gamma=args.gamma, 
+best_dict, model = algo_dqn.train_dqn_agent(env, model, optimizer, num_episodes=args.episodes, gamma=args.gamma, 
                                      target_update_freq=args.tfreq, batch_size=args.batch_size, epsilon=args.epsilon, 
                                      decay_rate=args.dr)
 

@@ -69,7 +69,7 @@ class MatrixDataset(Dataset):
         
         return matrix_tensor, measurement_tensor, row_index_tensor, label_tensor
 
-def prepare_training_data():
+def prepare_training_data(max_rows=None):
     df = pd.read_csv(EXP_PATH / 'OptimizationMatrices' / 'volumes.csv')    
 
     matrices = []
@@ -82,11 +82,12 @@ def prepare_training_data():
         #print(f"Running for: {C}contacts_{M}polys_D{D}")
         data = sio.loadmat(DATA_PATH / 'OptimizationMatrices' / f'{C}contacts_{M}polys.mat')
         arr = data['JGQ']
-        arr = utils_math.scale_data(arr, technique='simple')
-        indices = np.array(ast.literal_eval(row['Indices #2']), dtype=int)  # Convert string to numpy array 
-        good_indices.append(indices)        
-        matrices.append(arr)
-        measurements.append(D)
+        if not max_rows or (arr.shape[0] < max_rows): 
+            arr = utils_math.scale_data(arr, technique='simple')
+            indices = np.array(ast.literal_eval(row['Indices #2']), dtype=int)  # Convert string to numpy array 
+            good_indices.append(indices)        
+            matrices.append(arr)
+            measurements.append(D)
     
     # Find the largest number of columns
     max_m = max(matrix.shape[1] for matrix in matrices)
@@ -114,6 +115,6 @@ def prepare_training_data():
             X.append(sample)
             Y.append(label)
     
-    return X, Y
+    return X, Y, max_m
 
 
