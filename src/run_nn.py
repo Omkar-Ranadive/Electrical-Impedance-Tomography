@@ -25,7 +25,7 @@ if __name__ == '__main__':
                         Models get saved every save_it iterations depending on this param. 
                         If -1, only final model gets saved.
                         """)
-    parser.add_argument("--print_it", type=int, default=10, 
+    parser.add_argument("--print_it", type=int, default=100, 
                         help="Print progress to terminal every print_it iterations")
     parser.add_argument("--max_cols", default=None, type=int, 
                         help="Matrices will be padded with max(max_cols, max_col_of_matrices)")
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     writer = SummaryWriter(log_dir=EXP_DIR)
 
     dataCreator = utils_torch.DataPreparer(filename='volumes.csv', max_rows=args.max_rows, max_cols=args.max_cols)
-    (X_train, Y_train, grouped_indices_train, 
+    (padded_mat, X_train, Y_train, grouped_indices_train, 
     X_val, Y_val, grouped_indices_val, max_cols) = dataCreator.get_data_with_split()
        
     # Convert training and validation data to custom dataset
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     pos_weight = num_negative_samples / num_positive_samples
 
     logger.info(f"Number of positive samples in training: {num_positive_samples}")
-    logger.info(f"Number of negative samples in training: {num_positive_samples}")
+    logger.info(f"Number of negative samples in training: {num_negative_samples}")
     # logger.info(f"Weights: Positive class: {weight_positive}, Negative Class: {weight_negative}")
     logger.info(f"Positive weights: {pos_weight}")
     # Define class weights
@@ -110,12 +110,14 @@ if __name__ == '__main__':
         correct_predictions = 0 
         total_samples = 0
 
-        for i, (batch_matrix_i, batch_measurement_i, batch_row_index, batch_Y) in enumerate(train_loader):        
+        for i, (batch_matid_i, batch_measurement_i, batch_row_index, batch_Y) in enumerate(train_loader):        
             # Zero the gradients
             optimizer.zero_grad()
             
+            matrix_i = torch.tensor(padded_mat[batch_matid_i[0]]).float()
             # Forward pass
-            outputs = model((batch_matrix_i.to(device), batch_measurement_i.to(device), batch_row_index.to(device)))
+            outputs = model((matrix_i.to(device), batch_matid_i.to(device), 
+                             batch_measurement_i.to(device), batch_row_index.to(device)))
 
             # Compute loss
             batch_Y = batch_Y.unsqueeze(1) if batch_Y.dim() == 1 else batch_Y
@@ -151,10 +153,12 @@ if __name__ == '__main__':
         model.eval()
         total_samples_val = 0
         correct_predictions_val = 0 
-        for batch_matrix_i_val, batch_measurement_i_val, batch_row_index_val, batch_Y_val in val_loader:
+        for batch_matid_val, batch_measurement_i_val, batch_row_index_val, batch_Y_val in val_loader:
+            matrix_i_val = torch.tensor(padded_mat[batch_matid_val[0]]).float()
+
             # Forward pass for validation
-            outputs_val = model((batch_matrix_i_val.to(device), batch_measurement_i_val.to(device), 
-                                batch_row_index_val.to(device)))
+            outputs_val = model((matrix_i_val.to(device), batch_matid_val.to(device), 
+                                 batch_measurement_i_val.to(device), batch_row_index_val.to(device)))
             
             batch_Y_val = batch_Y_val.unsqueeze(1) if batch_Y_val.dim() == 1 else batch_Y_val
 

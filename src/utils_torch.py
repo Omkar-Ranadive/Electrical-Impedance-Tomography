@@ -31,6 +31,8 @@ class DataPreparer():
         self.matrices = []
         self.good_indices = []
         self.measurements = []
+        self.contacts = []
+        self.polys = []
         self.max_cols = max_cols
         self.padded_matrices, self.max_m = self._load_matrices()
     
@@ -49,7 +51,9 @@ class DataPreparer():
                 self.good_indices.append(indices)        
                 self.matrices.append(arr)
                 self.measurements.append(D)
-        
+                self.contacts.append(C)
+                self.polys.append(M)
+
         # Find the largest number of columns
         max_m = max(matrix.shape[1] for matrix in self.matrices)
         if self.max_cols: 
@@ -89,7 +93,7 @@ class DataPreparer():
             for row_index in range(num_rows):
                 # Check if the row index is present in indices_i
                 label = 1 if row_index in indices_i else 0
-                sample = [matrix_i, measurement_i, row_index]
+                sample = [i, measurement_i, row_index]
                 if test_flag: 
                     X_test.append(sample)
                     Y_test.append(label)
@@ -101,7 +105,8 @@ class DataPreparer():
                     grouped_indices_train[i].append(counter_train)
                     counter_train += 1
         
-        return X_train, Y_train, grouped_indices_train, X_test, Y_test, grouped_indices_test, self.max_m
+        return (self.padded_matrices, X_train, Y_train, grouped_indices_train, 
+                X_test, Y_test, grouped_indices_test, self.max_m)
 
 
     def get_data_without_split(self): 
@@ -118,13 +123,13 @@ class DataPreparer():
             for row_index in range(num_rows):
                 # Check if the row index is present in indices_i
                 label = 1 if row_index in indices_i else 0
-                sample = [matrix_i, measurement_i, row_index]
+                sample = [i, measurement_i, row_index]
                 X.append(sample)
                 Y.append(label)
                 grouped_indices[i].append(counter)
                 counter += 1
 
-        return X, Y, grouped_indices, self.max_m
+        return self.padded_matrices, X, Y, grouped_indices, self.max_m
 
 
 class MatrixDataset(Dataset):
@@ -138,7 +143,7 @@ class MatrixDataset(Dataset):
     def __getitem__(self, idx):
         matrix_i, measurement_i, row_index = self.data[idx]
         label = self.labels[idx]
-        matrix_tensor = torch.from_numpy(matrix_i).float()
+        matrix_tensor = torch.tensor(matrix_i).int()
         measurement_tensor = torch.tensor(measurement_i).float()
         row_index_tensor = torch.tensor(row_index).int()
         label_tensor = torch.tensor(label).float()
@@ -173,4 +178,3 @@ class MatrixInferenceSampler(Sampler):
     def __len__(self):
         total_samples = sum(len(indices) for indices in self.grouped_indices.values())
         return total_samples
-

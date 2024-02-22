@@ -29,9 +29,13 @@ args = parser.parse_args()
 # files = {'clustering_angle.csv': 'Clust_angle', 'clustering_ang40_20mag.csv': 'Clust_ang40_20mag', 
 #           'clustering_ang40_mag.csv': 'Clust_ang40_mag',  'EnsembleGenetic.csv': 'EnsembleGenetic'}
 
-files = {'clustering_ang40_20mag.csv': 'Clust_ang40_20mag', 
-          'EnsembleGenetic.csv': 'EnsembleGenetic', 
-          'clustering_ang40_20mag_v4.csv': 'Clust_ang40_20mag_v4'}
+# files = {'clustering_ang40_20mag.csv': 'Clust_ang40_20mag', 
+#           'EnsembleGenetic.csv': 'EnsembleGenetic', 
+#           'clustering_ang40_20mag_v4.csv': 'Clust_ang40_20mag_v4'}
+
+files = {'EnsembleGenetic.csv': 'EnsembleGenetic', 
+        'clustering_ang40_20mag_v4.csv': 'Clust_ang40_20mag_v4', 
+        'nn_test_6000_v2_cf0_5_bs128.csv': 'Neural Net_V1'}
 
 
 EXP_DIR = EXP_PATH / 'OptimizationMatrices'
