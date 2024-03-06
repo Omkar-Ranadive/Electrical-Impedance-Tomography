@@ -22,7 +22,6 @@ if __name__ == '__main__':
     parser.add_argument("--max_rows", type=int, default=None, help="Limit training to matrices < max_rows")
     parser.add_argument("--max_cols", type=int, default=None, 
                         help="Matrices will be padded with max(max_cols, max_col_of_matrices)")
-    parser.add_argument("--features", type=int, required=True, help="Number of hidden features which the model has")
     parser.add_argument("--bs", type=int, default=32, help="Batch size to use during inference")
     parser.add_argument("--cf", type=float, default=0.5, help="Confidence threshold")
     args = parser.parse_args()
@@ -38,11 +37,12 @@ if __name__ == '__main__':
     test_dataset = utils_torch.MatrixDataset(X_test, Y_test)
 
     input_size = max_cols # Number of features in each row
-    hidden_size = args.features  # Hidden size of LSTM and embedding
+    hidden_size = max_cols
     output_size = 1  # Binary classification (good or bad row)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = algo_nn.AttentionModel(input_size, hidden_size, output_size, max_cols).to(device)
+    # model = algo_nn.AttentionModel(input_size, hidden_size, output_size, max_cols).to(device)
+    model = algo_nn.TransformerModel(input_size, hidden_size, output_size, num_layers=3, nhead=3).to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     matrix_sampler = utils_torch.MatrixInferenceSampler(grouped_indices)

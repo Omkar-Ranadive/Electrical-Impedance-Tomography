@@ -19,7 +19,7 @@ if __name__ == '__main__':
     parser.add_argument("--epochs", type=int, default=10, help="Number of epochs")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
     parser.add_argument("--bs", type=int, default=32, help="Batch size of training samples")
-    parser.add_argument("--features", type=int, required=True, help="Number of hidden features which the model has")
+    # parser.add_argument("--features", type=int, required=True, help="Number of hidden features which the model has")
     parser.add_argument("--max_rows", type=int, default=None, help="Limit training to matrices < max_rows")
     parser.add_argument("--save_it", type=int, default=1, 
                         help="""
@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     # Initialize the model
     input_size = max_cols # Number of features in each row
-    hidden_size = args.features  # Hidden size of LSTM and embedding
+    hidden_size = max_cols # Hidden size for transformer (= max_cols)
     output_size = 1  # Binary classification (good or bad row)
     num_epochs = args.epochs
     best_acc = 0
@@ -77,8 +77,7 @@ if __name__ == '__main__':
     # Check if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = algo_nn.AttentionModel(input_size, hidden_size, output_size, max_cols).to(device)
-
+    model = algo_nn.TransformerModel(input_size, hidden_size, output_size, num_layers=3, nhead=3).to(device)
     # Define optimizer and loss function
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
