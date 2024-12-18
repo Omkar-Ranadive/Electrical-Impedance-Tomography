@@ -88,7 +88,7 @@ if __name__ == '__main__':
     total_samples = len(Y_train)
     # weight_positive = total_samples / (2 * num_positive_samples)
     # weight_negative = total_samples / (2 * num_negative_samples)
-    pos_weight = num_negative_samples / num_positive_samples
+    pos_weight = 10*(num_negative_samples / num_positive_samples)
 
     logger.info(f"Number of positive samples in training: {num_positive_samples}")
     logger.info(f"Number of negative samples in training: {num_negative_samples}")
